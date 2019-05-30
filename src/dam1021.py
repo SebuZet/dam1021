@@ -57,7 +57,7 @@ class Connection(object):
     >>> conn.set_input_source(0)
     """
 
-    def __init__(self,device=DEFAULT_SERIAL_DEVICE,timeout=DEFAULT_SERIAL_TIMEOUT,cautious = False):
+    def __init__(self,device=DEFAULT_SERIAL_DEVICE,timeout=DEFAULT_SERIAL_TIMEOUT,cautious = False, opened_device=None):
         self.cautious = cautious
         self.timeout  = timeout
 
@@ -115,7 +115,13 @@ class Connection(object):
                 return rv if rv else None
             return getc
 
-        self.ser = serial.Serial(device,115200,timeout=0.25)
+        if not opened_device:
+            self.ser = serial.Serial(device,115200,timeout=0.25)
+            self.close_serial_device = True
+        else:
+            self.ser = opened_device
+            self.close_serial_device = False
+
         self.xmodem = xmodem.XMODEM(getc_generator(self.ser),putc_generator(self.ser))
 
         log.debug("Serial port opened")
@@ -144,7 +150,8 @@ class Connection(object):
         """
 
         self.close_umanager()
-        self.ser.close()
+        if self.close_serial_device:
+            self.ser.close()
         log.debug("Serial port closed")
 
     def open_umanager(self):
